@@ -9,6 +9,14 @@ app.use(express.json());
 
 let db;
 
+// NATO Phonetic Alphabet / Military Names A-Z
+const militaryNames = [
+  "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", 
+  "Hotel", "India", "Juliett", "Kilo", "Lima", "Mike", "November", 
+  "Oscar", "Papa", "Quebec", "Romeo", "Sierra", "Tango", "Uniform", 
+  "Victor", "Whiskey", "X-ray", "Yankee", "Zulu"
+];
+
 (async () => {
     db = await open({
         filename: './database.sqlite',
@@ -22,18 +30,24 @@ let db;
         )
     `);
 
-    // Seed data if empty
     const count = await db.get('SELECT COUNT(*) as count FROM users');
+    
     if (count.count === 0) {
-        await db.run('INSERT INTO users (user) VALUES (?)', ['JohnDoe123']);
-        await db.run('INSERT INTO users (user) VALUES (?)', ['SethPinca_Dev']);
-        await db.run('INSERT INTO users (user) VALUES (?)', ['Jane_Smith']);
+        console.log("Seeding military names into database...");
+        for (const name of militaryNames) {
+            await db.run('INSERT INTO users (user) VALUES (?)', [name]);
+        }
+        console.log("Database seeded successfully!");
     }
 })();
 
 app.get('/users', async (req, res) => {
-    const users = await db.all('SELECT * FROM users');
-    res.json(users);
+    try {
+        const users = await db.all('SELECT * FROM users ORDER BY user ASC');
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch users" });
+    }
 });
 
 app.listen(3000, () => console.log('Backend live at http://localhost:3000'));
