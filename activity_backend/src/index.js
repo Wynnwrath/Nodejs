@@ -7,9 +7,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const PORT = process.env.PORT || 3000;
+
 let db;
 
-// NATO Phonetic Alphabet / Military Names A-Z
 const militaryNames = [
   "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", 
   "Hotel", "India", "Juliett", "Kilo", "Lima", "Mike", "November", 
@@ -17,6 +18,7 @@ const militaryNames = [
   "Victor", "Whiskey", "X-ray", "Yankee", "Zulu"
 ];
 
+// Initialize Database and Seed Data
 (async () => {
     db = await open({
         filename: './database.sqlite',
@@ -41,6 +43,7 @@ const militaryNames = [
     }
 })();
 
+// API Route to fetch all users
 app.get('/users', async (req, res) => {
     try {
         const users = await db.all('SELECT * FROM users ORDER BY user ASC');
@@ -50,4 +53,7 @@ app.get('/users', async (req, res) => {
     }
 });
 
-app.listen(3000, () => console.log('Backend live at http://localhost:3000'));
+// Health check
+app.get('/', (req, res) => res.send("Backend is Running!"));
+
+app.listen(PORT, () => console.log(`Server live on port ${PORT}`));
