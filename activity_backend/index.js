@@ -7,53 +7,53 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
-
+const PORT = 3000;
 let db;
 
-const militaryNames = [
-  "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", 
-  "Hotel", "India", "Juliett", "Kilo", "Lima", "Mike", "November", 
-  "Oscar", "Papa", "Quebec", "Romeo", "Sierra", "Tango", "Uniform", 
-  "Victor", "Whiskey", "X-ray", "Yankee", "Zulu"
-];
-
-// Initialize Database and Seed Data
+// 1. Point to your specific students.db file
 (async () => {
-    db = await open({
-        filename: './database.sqlite',
-        driver: sqlite3.Database
-    });
-
-    await db.exec(`
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user TEXT
-        )
-    `);
-
-    const count = await db.get('SELECT COUNT(*) as count FROM users');
-    
-    if (count.count === 0) {
-        console.log("Seeding military names into database...");
-        for (const name of militaryNames) {
-            await db.run('INSERT INTO users (user) VALUES (?)', [name]);
-        }
-        console.log("Database seeded successfully!");
+    try {
+        db = await open({
+            filename: './students.db', // Updated filename
+            driver: sqlite3.Database
+        });
+        console.log(" Connected to students.db");
+    } catch (error) {
+        console.error("Database connection failed:", error);
     }
 })();
 
-// API Route to fetch all users
+// 2. GET Route: Fetch all students
 app.get('/users', async (req, res) => {
     try {
-        const users = await db.all('SELECT * FROM users ORDER BY user ASC');
-        res.json(users);
-    } catch (error) {
-        res.status(500).json({ error: "Failed to fetch users" });
+        const data = await db.all('SELECT * FROM students ORDER BY lastname ASC');
+        res.json(data);
+    } catch (err) {
+        console.error("Fetch Error:", err.message);
+        res.status(500).json({ error: "Could not fetch data from students table." });
     }
 });
 
-// Health check
-app.get('/', (req, res) => res.send("Backend is Running!"));
+// 3. POST Route: Add a student
+app.post('/users', async (req, res) => {
+    const { idno, lastname, firstname, course, level } = req.body;
+    
+    try {
+        // Updated to match your exact schema
+        const query = `
+            INSERT INTO students (idno, lastname, firstname, course, level) 
+            VALUES (?, ?, ?, ?, ?)
+        `;
+        await db.run(query, [idno, lastname, firstname, course, level]);
+        res.json({ message: "Student added successfully!" });
+    } catch (err) {
+        console.error("Insert Error:", err.message);
+        res.status(500).json({ error: "Failed to add student. Check column names." });
+    }
+});
 
-app.listen(PORT, () => console.log(`Server live on port ${PORT}`));
+app.get('/', (req, res) => res.send("Backend is Running on students.db!"));
+
+app.listen(PORT, () => {
+    console.log(`🚀 Server live at http://localhost:${PORT}`);
+});
